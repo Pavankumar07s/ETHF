@@ -3,7 +3,7 @@ import { SDK as FusionX, OrderStatus } from "@1inch/cross-chain-sdk";
 export async function checkOrderStatus(orderHash: string) {
   const client = new FusionX({
     // same base URL you used before
-    url: "http://localhost:3001/api/1inch",
+    url: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/1inch`,
     // blockchainProvider is NOT required just to read status
   });
 

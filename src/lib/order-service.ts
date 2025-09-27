@@ -54,7 +54,7 @@ class OrderService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
   }
 
   /**

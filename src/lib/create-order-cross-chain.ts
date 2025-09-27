@@ -211,7 +211,7 @@ export async function crossChainPay(
   const web3 = new Web3(window.ethereum);
 
   const client = new FusionX({
-    url: "http://localhost:3001/api/1inch/cross-chain-x",
+    url: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/1inch/cross-chain-x`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blockchainProvider: new Web3ProviderConnector(web3 as any),
   });
@@ -282,7 +282,7 @@ export async function crossChainPay(
   try {
     if (token) {
       const mappingResponse = await fetch(
-        "http://localhost:3001/api/order/mapping",
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/order/mapping`,
         {
           method: "POST",
           headers: {

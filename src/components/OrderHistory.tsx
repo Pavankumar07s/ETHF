@@ -12,7 +12,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ order, isOpen, onClose }) => {
   
   if (!isOpen) return null;
 
-  const shareUrl = `http://localhost:5173/pay/${order.uid || order._id}`;
+  const shareUrl = `${window.location.origin}/pay/${order.uid || order._id}`;
   const shareText = `Payment request for $${(parseInt(order.usdCents) / 100).toFixed(2)}`;
 
   const copyToClipboard = async () => {

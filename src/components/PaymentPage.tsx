@@ -185,7 +185,7 @@ const PaymentPage: React.FC = () => {
   ): Promise<TokenPriceData> => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/price/chain/${chainId}/token/${tokenAddress}/`
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/price/chain/${chainId}/token/${tokenAddress}/`
       );
       const data = await response.json();
       return data;
@@ -206,7 +206,7 @@ const PaymentPage: React.FC = () => {
   ): Promise<RequiredAmountData> => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/price/get-required-token-amount/chain/${chainId}/token/${tokenAddress}/requiredUsd/${requiredUsd}`
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/price/get-required-token-amount/chain/${chainId}/token/${tokenAddress}/requiredUsd/${requiredUsd}`
       );
       const data = await response.json();
       return data;

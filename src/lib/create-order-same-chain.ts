@@ -179,7 +179,7 @@ export async function sameChainPay(
   const web3 = new Web3(window.ethereum);
 
   const client = new FusionSDK({
-    url: "http://localhost:3001/api/1inch/same-chain-x",
+    url: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/1inch/same-chain-x`,
     network: chain,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blockchainProvider: new Web3ProviderConnector(web3 as any),
@@ -283,7 +283,7 @@ export async function sameChainPay(
     // Submit order mapping to backend (now we have the actual order hash)
     try {
       const mappingResponse = await fetch(
-        "http://localhost:3001/api/order/mapping",
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/order/mapping`,
         {
           method: "POST",
           headers: {

@@ -105,7 +105,7 @@ function App() {
   // Check if user is already authenticated
   const checkAuth = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/auth/me', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/auth/me`, {
         credentials: 'include',
       });
       
@@ -131,7 +131,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:3001/api/auth/logout', {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
