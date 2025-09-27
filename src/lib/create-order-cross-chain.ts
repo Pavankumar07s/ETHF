@@ -187,11 +187,26 @@ export async function crossChainPay(
   outToken: string,
   payAmount: number,
   _usdCents: number,
-  _merchant: string,
+  merchant: string,
   merchantOrderUuid: string
 ) {
   if (!window.ethereum) {
     throw new Error("No ethereum provider found");
+  }
+
+  // Validate cross-chain requirement
+  if (inChain === outChain) {
+    throw new Error("Cross-chain payment requires different source and destination chains");
+  }
+
+  // Validate token addresses
+  if (!ethers.isAddress(inToken) || !ethers.isAddress(outToken)) {
+    throw new Error("Invalid token addresses provided");
+  }
+
+  // Validate merchant address
+  if (!ethers.isAddress(merchant)) {
+    throw new Error("Invalid merchant address provided");
   }
   
   // Switch to the input chain first (with auto-add if needed)
@@ -222,22 +237,36 @@ export async function crossChainPay(
   );
   const token = new ethers.Contract(inToken, ERC20_ABI, provider);
   const spender = LOP[inChain as keyof typeof LOP];
-  const [decimals, allowance] = await Promise.all([
+  
+  if (!spender) {
+    throw new Error(`LOP contract not available for chain ${inChain}`);
+  }
+
+  const [decimals, balance, allowance] = await Promise.all([
     token.decimals(),
     token.balanceOf(buyer),
     token.allowance(buyer, spender),
   ]);
 
   const payAmountWei = ethers.parseUnits(String(payAmount), decimals); // bigint
+  
+  // Check if user has sufficient balance
+  if (balance < payAmountWei) {
+    throw new Error(`Insufficient token balance. Required: ${payAmount}, Available: ${ethers.formatUnits(balance, decimals)}`);
+  }
   // await window.ethereum.request({
   //   method: "wallet_switchEthereumChain",
   //   params: [{ chainId: ethers.toBeHex(inChain) }],
   // });
   if (allowance < payAmountWei) {
+    console.log("Approving token spend...");
     const tokenWithSigner = new ethers.Contract(inToken, ERC20_ABI, signer);
     const tx = await tokenWithSigner.approve(spender, ethers.MaxUint256);
     await tx.wait();
+    console.log("Token approval confirmed");
   }
+
+  console.log("Getting cross-chain quote...");
   const quote = await client.getQuote({
     amount: payAmountWei.toString(),
     srcChainId: inChain,
@@ -246,6 +275,14 @@ export async function crossChainPay(
     dstTokenAddress: outToken,
     enableEstimate: true,
     walletAddress: buyer,
+  });
+
+  console.log("Quote received:", {
+    srcChainId: inChain,
+    dstChainId: outChain,
+    srcToken: inToken,
+    dstToken: outToken,
+    amount: payAmountWei.toString()
   });
   const preset = PresetEnum.fast;
   const secretsCount =
@@ -272,49 +309,52 @@ export async function crossChainPay(
   const { hash, quoteId, order } = client.createOrder(quote, {
     walletAddress: buyer,
     hashLock,
-    receiver: "0xaDFC29f0a6114020b843a940ff39a83df87D79BE",
+    receiver: merchant, // Use actual merchant address instead of hardcoded one
     preset,
     secretHashes,
   });
-  console.log("Order created:", hash);
+  console.log("Order created:", {
+    hash,
+    quoteId,
+    receiver: merchant,
+    srcChain: inChain,
+    dstChain: outChain
+  });
 
   // Submit the order mapping to the backend
   try {
-    if (token) {
-      const mappingResponse = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/order/mapping`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            merchantOrderUuid,
-            orderhash: hash,
-            quoteId: quote.quoteId,
-            secrets,
-          }),
-        }
-      );
-
-      if (mappingResponse.ok) {
-        const mappingData = await mappingResponse.json();
-        console.log("Order mapping created:", mappingData);
-      } else {
-        console.error(
-          "Failed to create order mapping:",
-          await mappingResponse.text()
-        );
+    console.log("Creating order mapping...");
+    const mappingResponse = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}/order/mapping`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          merchantOrderUuid,
+          orderhash: hash,
+          quoteId: quote.quoteId,
+          secrets,
+        }),
       }
+    );
+
+    if (mappingResponse.ok) {
+      const mappingData = await mappingResponse.json();
+      console.log("Order mapping created:", mappingData);
     } else {
-      console.warn("No auth token found, skipping order mapping");
+      const errorText = await mappingResponse.text();
+      console.error("Failed to create order mapping:", errorText);
+      throw new Error(`Failed to create order mapping: ${errorText}`);
     }
   } catch (error) {
     console.error("Error creating order mapping:", error);
-    // Don't fail the entire payment process if mapping fails
+    throw new Error(`Order mapping failed: ${error}`);
   }
 
+  console.log("Submitting order to 1inch...");
   const submitResult = await client.submitOrder(
     inChain,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -322,7 +362,7 @@ export async function crossChainPay(
     quoteId,
     secretHashes
   );
-  console.log("Order submitted:", submitResult);
+  console.log("Order submitted successfully:", submitResult);
 
   return {
     success: true,
