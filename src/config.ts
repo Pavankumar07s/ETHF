@@ -4,7 +4,7 @@ import { mainnet, polygon, optimism, } from "wagmi/chains";
 
 export const config = getDefaultConfig({
   appName: "My RainbowKit App",
-  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || "2f5a6b8c9d1e2f3a4b5c6d7e8f9a0b1c", // Temporary fallback
+  projectId: "YOUR_PROJECT_ID",
   chains: [mainnet, polygon, optimism],
   ssr: true, // If your dApp uses server side rendering (SSR)
   transports: {
