@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAccount } from 'wagmi';
 import tokensData from '../constants/tokens.json';
 import { createOrder } from '../lib/order-service';
 
@@ -125,6 +126,7 @@ const chainLogos: { [key: string]: React.ReactElement } = {
 };
 
 const TokenSelector: React.FC = () => {
+  const { address: walletAddress } = useAccount();
   const [selectedChain, setSelectedChain] = useState<string>('');
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [showTokens, setShowTokens] = useState(false);
@@ -138,6 +140,16 @@ const TokenSelector: React.FC = () => {
     usdCents: '1000', // $10.00
     deadlineSec: '6000' // 100 minutes
   });
+
+  // Update merchant address when wallet connects
+  useEffect(() => {
+    if (walletAddress) {
+      setOrderForm(prev => ({
+        ...prev,
+        merchant: walletAddress
+      }));
+    }
+  }, [walletAddress]);
 
   const data = tokensData as TokensData;
   const availableChains = Object.keys(data).filter(chainId => chainNames[chainId]);

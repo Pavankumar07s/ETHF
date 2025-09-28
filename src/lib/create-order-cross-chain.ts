@@ -92,8 +92,8 @@ const NETWORK_CONFIGS = {
 };
 
 // Helper function to convert chainId to unpadded hex string (MetaMask requirement)
-const toUnpaddedHex = (chainId: number): string => {
-  return `0x${chainId.toString(16)}`;
+const toPaddedHex = (chainId: number): string => {
+  return `0x${chainId.toString(16).padStart(2, '0')}`;
 };
 
 // Function to add network to wallet
@@ -128,7 +128,7 @@ const switchOrAddNetwork = async (chainId: number): Promise<void> => {
     // Try to switch to the network first
     await window.ethereum.request({
       method: "wallet_switchEthereumChain",
-      params: [{ chainId: toUnpaddedHex(chainId) }],
+      params: [{ chainId: toPaddedHex(chainId) }],
     });
   } catch (switchError: unknown) {
     console.log("Switch network error:", switchError);
@@ -142,7 +142,7 @@ const switchOrAddNetwork = async (chainId: number): Promise<void> => {
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
-          params: [{ chainId: toUnpaddedHex(chainId) }],
+          params: [{ chainId: toPaddedHex(chainId) }],
         });
       } catch (secondSwitchError) {
         console.error("Failed to switch after adding network:", secondSwitchError);
